@@ -2,10 +2,22 @@ import { urls } from './client'
 
 const SESSION_KEY = 'analytics_session_id'
 
+// crypto.randomUUID() only exists in secure contexts (HTTPS or localhost) —
+// it's silently absent over plain HTTP on a real hostname, which would
+// otherwise throw and crash the whole app on first render. This fallback
+// isn't cryptographically random, but a session ID only needs to be
+// unique-enough to group one visitor's events, not secure.
+function generateSessionId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
 function getSessionId() {
   let sessionId = sessionStorage.getItem(SESSION_KEY)
   if (!sessionId) {
-    sessionId = crypto.randomUUID()
+    sessionId = generateSessionId()
     sessionStorage.setItem(SESSION_KEY, sessionId)
   }
   return sessionId
